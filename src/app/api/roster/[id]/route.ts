@@ -97,6 +97,17 @@ export async function PATCH(req: NextRequest, ctx: { params: { id: string } }) {
       detail: body.detail,
     });
     roster.warnings = res.warnings || [];
+    roster.auditLog = audit;
+    roster.updatedAt = now;
+    const oid = toObjectId(String(roster._id));
+    if (!oid) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+    await col.updateOne(
+      { _id: oid },
+      { $set: { saturdays: roster.saturdays, sundays: roster.sundays, status: roster.status,
+                warnings: roster.warnings, auditLog: roster.auditLog, absences: roster.absences || [],
+                updatedAt: now } }
+    );
+    return NextResponse.json({ roster, telegram: res.telegram || { ok: true } });
   } else {
     // Re-validate on any save (e.g. manual cell edits). Fold this month's
     // absences in so rostering an absent person raises a hard warning.
@@ -150,7 +161,7 @@ async function applyAction(
   byEmail: string,
   detail?: string,
   baseUrl = ""
-): Promise<{ error?: string; warnings?: Roster["warnings"] }> {
+): Promise<{ error?: string; warnings?: Roster["warnings"]; telegram?: { ok: boolean; error?: string } }> {
   const VALID: RosterStatus[] = ["DRAFT", "WORSHIP_FILLED", "SERVICE_FILLED", "APPROVED"];
   const transitions: Record<string, RosterStatus> = {
     worship_submit: "WORSHIP_FILLED",
@@ -181,14 +192,26 @@ async function applyAction(
   const safeEmail = escapeHtml(byEmail);
   const safeMonth = escapeHtml(roster.month);
   const safeDetail = escapeHtml(detail || "(none)");
+  // Telegram delivery tracking. Sends used to fail silently (submit
+  // succeeded, nobody notified). Failures are logged server-side (visible in
+  // Vercel Function Logs) and summarized back to the caller for UI display.
+  const deliveries: { ok: boolean; error?: string }[] = [];
+  async function notify(p: Promise<{ ok: boolean; error?: string }>) {
+    const r = await p;
+    deliveries.push(r);
+    if (!r.ok) {
+      console.warn(`[telegram] ${action} for ${roster.month} NOT delivered: ${r.error}`);
+    }
+  }
+
   if (action === "worship_submit") {
     const msg = `🎶 Worship portion submitted for <b>${safeMonth}</b> by ${safeEmail}.\nPlease review and fill the rest: ${linkTag}`;
-    await sendTelegramMessage(msg);
+    await notify(sendTelegramMessage(msg));
   } else if (action === "service_submit") {
     const msg =
       `✅ <b>${safeMonth}</b> roster is ready for approval (submitted by ${safeEmail}).\n` +
       `👉 Tap here to view and approve: ${linkTag}`;
-    await sendTelegramMessage(msg);
+    await notify(sendTelegramMessage(msg));
   } else if (action === "approve") {
     // Send the approval message with the roster PDF attached (no link needed).
     const caption = `✝️ <b>${safeMonth}</b> roster is APPROVED and final.`;
@@ -200,14 +223,22 @@ async function applyAction(
       const sent = await sendTelegramDocument(pdf, fileName, caption);
       if (!sent.ok) {
         // Fall back to a plain message if the document failed to send.
-        await sendTelegramMessage(caption);
+        await notify(sendTelegramMessage(caption));
+      } else {
+        deliveries.push({ ok: true });
       }
     } catch {
-      await sendTelegramMessage(caption);
+      await notify(sendTelegramMessage(caption));
     }
   } else if (action === "worship_reject" || action === "service_reject") {
     const who = action === "worship_reject" ? "worship" : "service";
-    await sendTelegramMessage(`↩️ ${who} portion sent back for ${safeMonth}. Reason: ${safeDetail}`);
+    await notify(
+      sendTelegramMessage(`↩️ ${who} portion sent back for ${safeMonth}. Reason: ${safeDetail}`)
+    );
   }
-  return { warnings };
+  const failed = deliveries.find((d) => !d.ok);
+  return {
+    warnings,
+    telegram: failed ? { ok: false, error: failed.error } : { ok: true },
+  };
 }

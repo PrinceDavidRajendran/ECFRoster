@@ -14,6 +14,7 @@ export default function WorshipRosterPage({ isAdmin = false }: { isAdmin?: boole
   const [roster, setRoster] = useState<Roster | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const [newMonth, setNewMonth] = useState(nextMonth());
 
   const loadList = useCallback(async () => {
@@ -104,7 +105,18 @@ export default function WorshipRosterPage({ isAdmin = false }: { isAdmin?: boole
       body: JSON.stringify({ action: "worship_submit" }),
     });
     setBusy(false);
-    if (res.ok) { const d = await res.json(); setRoster(d.roster); }
+    if (res.ok) {
+      const d = await res.json();
+      setRoster(d.roster);
+      if (d.telegram && !d.telegram.ok) {
+        setNote(
+          `Saved, but the Telegram notification failed (${d.telegram.error || "unknown error"}). ` +
+          `Ask an admin to check the bot token/chat ID (Admin → Dashboard → Test Telegram).`
+        );
+      } else {
+        setNote(null);
+      }
+    }
     else { const d = await res.json(); setError(d.error); }
   }
 
@@ -139,6 +151,7 @@ export default function WorshipRosterPage({ isAdmin = false }: { isAdmin?: boole
       </div>
 
       {error && <p className="text-sm text-red-700">{error}</p>}
+      {note && <p className="text-sm text-amber-700" aria-live="polite">{note}</p>}
       {roster && isLocked && (
         <div className="badge bg-blue-100 text-blue-800 text-sm py-1 px-3">
           Status: {roster.status.replace(/_/g, " ")} — worship portion is locked.

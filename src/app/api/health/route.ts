@@ -27,6 +27,10 @@ export async function GET() {
     // Collection counts only (no personal data) — verifies seed/clone state.
     report.people = await db.collection("people").countDocuments();
     report.rules = await db.collection("rules").countDocuments();
+    report.telegram =
+      process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID
+        ? "configured"
+        : "missing";
     report.rosters = await db.collection("rosters").countDocuments();
     report.rosterMonths = (
       await db.collection("rosters").find({}).project({ month: 1 }).toArray()

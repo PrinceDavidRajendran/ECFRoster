@@ -54,8 +54,7 @@ export default function ServiceRosterPage({ isAdmin = false }: { isAdmin?: boole
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
-  const [showPreview, setShowPreview] = useState(false);
-  const [rules, setRules] = useState<Rules | null>(null);
+  const [showPreview, setShowPreview] = useState(false);  const [rules, setRules] = useState<Rules | null>(null);
   const [newMonth, setNewMonth] = useState(nextMonth());
 
   const loadList = useCallback(async () => {
@@ -201,6 +200,19 @@ export default function ServiceRosterPage({ isAdmin = false }: { isAdmin?: boole
     }
   }
 
+  // Surface Telegram delivery failures (submit still succeeds — the
+  // notification is a side effect). Clears on the next successful send.
+  function flagTelegram(d: { telegram?: { ok: boolean; error?: string } }) {
+    if (d.telegram && !d.telegram.ok) {
+      setNote(
+        `Saved, but the Telegram notification failed (${d.telegram.error || "unknown error"}). ` +
+        `Check the bot token/chat ID, then use Admin → Dashboard → Test Telegram.`
+      );
+    } else {
+      setNote(null);
+    }
+  }
+
   async function submitForApproval() {
     if (!roster) return;
     if (
@@ -220,6 +232,7 @@ export default function ServiceRosterPage({ isAdmin = false }: { isAdmin?: boole
     if (res.ok) {
       const d = await res.json();
       setRoster(d.roster);
+      flagTelegram(d);
     } else {
       const d = await res.json();
       setError(d.error || "Submit failed");
@@ -247,6 +260,7 @@ export default function ServiceRosterPage({ isAdmin = false }: { isAdmin?: boole
       const d = await res.json();
       setRoster(d.roster);
       setRejectReason("");
+      flagTelegram(d);
     } else {
       const d = await res.json();
       setError(d.error || "Reject failed");
@@ -267,6 +281,7 @@ export default function ServiceRosterPage({ isAdmin = false }: { isAdmin?: boole
     if (res.ok) {
       const d = await res.json();
       setRoster(d.roster);
+      flagTelegram(d);
     } else {
       const d = await res.json();
       setError(d.error || "Approve failed");
@@ -343,7 +358,7 @@ export default function ServiceRosterPage({ isAdmin = false }: { isAdmin?: boole
       </div>
 
       {error && <p className="text-sm text-clay-600" role="alert" aria-live="polite">{error}</p>}
-      {note && <p className="text-sm text-sage-700" aria-live="polite">{note}</p>}
+      {note && <p className="text-sm text-amber-700" aria-live="polite">{note}</p>}
 
       {roster && (
         <>

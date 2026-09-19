@@ -16,6 +16,8 @@ export default function AdminDashboard({ rosters }: { rosters: Light[] }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [tgTesting, setTgTesting] = useState(false);
+  const [tgResult, setTgResult] = useState<string | null>(null);
 
   async function createRoster() {
     setError(null);
@@ -52,8 +54,43 @@ export default function AdminDashboard({ rosters }: { rosters: Light[] }) {
     window.location.reload();
   }
 
+  async function testTelegram() {
+    setTgTesting(true);
+    setTgResult(null);
+    try {
+      const res = await fetch("/api/telegram/test", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      setTgResult(
+        res.ok
+          ? "✓ Test message sent — check the Telegram group."
+          : `✗ Telegram failed: ${data.error || "unknown error"}. Check TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID in Vercel env vars (then redeploy).`
+      );
+    } catch (e) {
+      setTgResult(`✗ Telegram failed: ${String((e as Error).message)}`);
+    }
+    setTgTesting(false);
+  }
+
   return (
     <div className="space-y-8">
+      {/* Notifications */}
+      <section className="card p-6">
+        <p className="eyebrow">Notifications</p>
+        <h2 className="mt-2 font-display text-xl font-semibold text-ink-900">Telegram</h2>
+        <p className="mt-1 text-sm text-ink-500">
+          Submit/approve actions notify the group chat. Send a test to verify the bot wiring.
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button className="btn-secondary" disabled={tgTesting} onClick={testTelegram}>
+            {tgTesting ? "Sending…" : "Test Telegram"}
+          </button>
+          {tgResult && (
+            <span className="text-sm text-ink-700" role="status" aria-live="polite">
+              {tgResult}
+            </span>
+          )}
+        </div>
+      </section>
       {/* New month */}
       <section className="card p-6 animate-rise-in">
         <p className="eyebrow">Begin a month</p>
