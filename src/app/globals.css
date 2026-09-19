@@ -1,0 +1,292 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =====================================================================
+   ECF Roster — "Illuminated Sanctuary" design system
+   Deep liturgical indigo ink · warm brass candlelight · parchment ivory.
+   ===================================================================== */
+
+:root {
+  color-scheme: light;
+  --ink: #231e1b;
+  --brass: #b57a30;
+  --parchment: #faf8f3;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+body {
+  font-family: var(--font-body), system-ui, sans-serif;
+  color: #2a2420;
+  background-color: #faf8f3;
+  /* Golden-hour warmth from above, grounded warmth below. */
+  background-image:
+    radial-gradient(1200px 520px at 50% -8%, rgba(201, 151, 74, 0.14), transparent 62%),
+    radial-gradient(900px 600px at 100% 8%, rgba(201, 151, 74, 0.07), transparent 55%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display), Georgia, serif;
+  color: var(--ink);
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+/* Faint film grain for warmth and tactility — sits above the background. */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+}
+
+/* Skip link — accessible, hidden until focused. */
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -48px;
+  z-index: 100;
+  background: var(--ink);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  transition: top 0.2s ease;
+}
+.skip-link:focus { top: 12px; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  touch-action: manipulation;
+}
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #faf8f3, 0 0 0 4px rgba(201, 151, 74, 0.7);
+}
+.btn-primary {
+  @apply btn bg-ink-800 text-parchment-50 hover:bg-ink-900 shadow-pew;
+}
+.btn-secondary {
+  @apply btn bg-white/70 border border-ink-100 text-ink-800 hover:bg-white hover:border-brass-300;
+}
+.btn-brass {
+  @apply btn text-ink-900 font-semibold shadow-pew;
+  background: linear-gradient(180deg, #e6bd7c 0%, #d09a4c 55%, #bf8236 100%);
+}
+.btn-brass:hover { filter: brightness(1.04); }
+.btn-danger { @apply btn bg-clay-500 text-white hover:bg-clay-600; }
+.btn-ghost { @apply btn text-ink-600 hover:bg-ink-50; }
+
+/* ---------- Inputs ---------- */
+.input {
+  @apply w-full px-3.5 py-2.5 rounded-xl border border-ink-100 bg-white/80 text-sm text-ink-900 transition-colors placeholder:text-ink-300;
+}
+.input:focus {
+  outline: none;
+  border-color: #c9974a;
+  box-shadow: 0 0 0 3px rgba(201, 151, 74, 0.18);
+}
+
+/* ---------- Cards ---------- */
+.card {
+  @apply bg-white/75 rounded-3xl border border-ink-100/70 shadow-pew backdrop-blur-sm;
+}
+
+.label {
+  @apply block text-sm font-medium text-ink-700 mb-1.5;
+}
+
+/* Brass eyebrow — small liturgical label above section titles. */
+.eyebrow {
+  @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-brass-600;
+}
+.eyebrow::before {
+  content: "";
+  width: 22px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #c9a557);
+}
+
+/* ---------- Badges ---------- */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+}
+.badge-hard { @apply badge bg-clay-100 text-clay-600; }
+.badge-soft { @apply badge bg-brass-100 text-brass-700; }
+.badge-ok { @apply badge bg-sage-100 text-sage-700; }
+
+/* ---------- Roster print / PDF layout ---------- */
+.roster-print {
+  background: #fff;
+  color: #000;
+  padding: 12px;
+  font-size: 10px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.roster-print .print-header {
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+  background: #1f3a5f;
+  color: #fff;
+  padding: 8px 6px;
+  border-radius: 3px;
+}
+.roster-print .print-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.roster-print .print-table th,
+.roster-print .print-table td {
+  border: 1px solid #9aa5b1;
+  padding: 3px 4px;
+  vertical-align: top;
+  text-align: left;
+  word-wrap: break-word;
+}
+.roster-print .print-table th {
+  background: #dbe5f1;
+  color: #1f3a5f;
+  font-size: 9px;
+  text-transform: uppercase;
+  text-align: center;
+  border-color: #4a4a4a;
+}
+.roster-print .print-table tbody tr:nth-child(even) td {
+  background: #f4f7fb;
+}
+.roster-print .week-row td {
+  height: 64px;
+}
+.roster-print .date-cell {
+  text-align: center;
+  font-weight: 700;
+}
+.roster-print .date-day {
+  font-weight: 400;
+  color: #555;
+  font-size: 9px;
+}
+.roster-print .preaching-cell {
+  font-weight: 700;
+}
+.roster-print .lbl {
+  font-weight: 700;
+  color: #1f3a5f;
+}
+.roster-print .lead {
+  font-weight: 700;
+}
+.roster-print .role-tag {
+  font-weight: 400;
+  color: #666;
+  font-size: 8px;
+}
+.roster-print .placeholder {
+  background: repeating-linear-gradient(
+    45deg,
+    #fafafa,
+    #fafafa 6px,
+    #f0f0f0 6px,
+    #f0f0f0 12px
+  );
+}
+.roster-print .print-footer {
+  margin-top: 10px;
+  font-size: 8px;
+  color: #333;
+}
+.roster-print .print-footer .quote {
+  font-style: italic;
+  margin-top: 4px;
+}
+.roster-print .footer-tasks {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 6px;
+}
+.roster-print .footer-tasks td {
+  border: 1px solid #333;
+  padding: 2px 4px;
+  font-size: 9px;
+}
+.roster-print .footer-tasks .ft-label {
+  font-weight: 700;
+  white-space: nowrap;
+  width: 1%;
+}
+.roster-print .footer-tasks .ft-value {
+  width: 40%;
+}
+
+/* When printing, show ONLY the roster print view. */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+  /* Ensure background colours (header band, zebra rows) are printed. */
+  .roster-print,
+  .roster-print * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .roster-print,
+  .roster-print * {
+    visibility: visible;
+  }
+  .roster-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0;
+  }
+  /* Neutralise the modal overlay/backdrop when printing. */
+  .print-modal {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+  .print-modal > div {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
