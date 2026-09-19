@@ -51,10 +51,17 @@ npx vercel --prod   # production deploy
 
 ## 4. First-run signup
 
-1. Open your deployed URL. With an empty database you'll be redirected to `/setup`.
-2. Create the **first admin account** (name + email + password ≥ 8 chars).
+1. Open `https://<your-app>.vercel.app/api/health` and confirm
+   `{ "ok": true, "db": "up", "sessionSecret": "configured" }`.
+   If `sessionSecret` is `missing-or-too-short`, logins and `/setup` will
+   fail — fix the env var and redeploy before going further.
+2. Open your deployed URL. With an empty database you'll be redirected to `/setup`.
+3. Create the **first admin account** (name + email + password ≥ 8 chars).
    `/setup` only works when **zero users exist** — afterwards it redirects to `/login`.
-3. As admin, add coordinators via **Admin → Users**.
+4. As admin, add coordinators via **Admin → Users**.
+
+> If you see **“Setup already complete”** on `/setup`, your account was
+> already created — go to `/login` and sign in instead of registering again.
 
 ## 5. Password management
 

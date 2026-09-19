@@ -3,6 +3,9 @@ import { collections, toObjectId } from "@/lib/db";
 import { getCurrentUser, requireRole } from "@/lib/auth";
 import type { CapabilityKey, Person } from "@/lib/types";
 
+// Auth-gated live data — never serve a cached answer.
+export const dynamic = "force-dynamic";
+
 async function ensureAdmin() {
   const me = await getCurrentUser();
   try {

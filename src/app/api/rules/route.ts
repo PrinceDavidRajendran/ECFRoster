@@ -4,6 +4,9 @@ import { getCurrentUser, requireRole } from "@/lib/auth";
 import { DEFAULT_RULES } from "@/lib/defaultRules";
 import type { Rules } from "@/lib/types";
 
+// Auth-gated live data — never serve a cached answer.
+export const dynamic = "force-dynamic";
+
 // Returns a shallow copy of the doc without its Mongo _id field.
 function stripId<T extends { _id?: unknown }>(doc: T): Omit<T, "_id"> {
   const rest = { ...doc } as Record<string, unknown>;

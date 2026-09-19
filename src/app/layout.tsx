@@ -29,6 +29,11 @@ export const viewport: Viewport = {
   themeColor: "#1a2340",
 };
 
+// Every page branches on live DB + session state — never prerender or
+// edge-cache HTML, otherwise /setup and /login can serve stale build-time
+// output after the database changes.
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${fraunces.variable} ${instrument.variable}`}>

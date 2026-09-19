@@ -3,6 +3,9 @@ import { collections } from "@/lib/db";
 import { getSession, hashPassword } from "@/lib/auth";
 import type { User } from "@/lib/types";
 
+// Must reflect the live user count — never serve a cached answer.
+export const dynamic = "force-dynamic";
+
 // Returns whether the system has any admin yet (drives the first-run UI).
 export async function GET() {
   const col = await collections.users();

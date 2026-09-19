@@ -3,6 +3,9 @@ import { collections } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { consumeResetToken, verifyResetToken } from "@/lib/passwordReset";
 
+// Token validity is live state — never serve a cached answer.
+export const dynamic = "force-dynamic";
+
 // GET ?token=… — validate without consuming (drives the reset page UI).
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);

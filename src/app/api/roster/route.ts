@@ -3,6 +3,9 @@ import { collections } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import type { MonthAbsence, Roster } from "@/lib/types";
 
+// Auth-gated live data — never serve a cached answer.
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const me = await getCurrentUser();
   if (!me) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });

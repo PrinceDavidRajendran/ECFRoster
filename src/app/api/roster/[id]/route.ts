@@ -10,6 +10,9 @@ import type { Person, Role, Roster, RosterStatus, Rules } from "@/lib/types";
 // pdfkit needs the Node.js runtime (not edge).
 export const runtime = "nodejs";
 
+// Auth-gated live data — never serve a cached answer.
+export const dynamic = "force-dynamic";
+
 // Escapes text for safe inclusion in Telegram HTML messages.
 function escapeHtml(s: string): string {
   return s
