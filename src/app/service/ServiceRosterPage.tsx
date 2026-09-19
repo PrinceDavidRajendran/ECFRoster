@@ -23,6 +23,8 @@ const SERVICE_SLOTS: (keyof WeekAssignments)[] = [
   "hospitalityTeam",
   "hospitality",
   "hospitalityLeads",
+  "kitchen",
+  "cafe",
 ];
 
 // Worship-coord-owned slots (read-only here but visible).

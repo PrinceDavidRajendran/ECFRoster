@@ -21,15 +21,20 @@ function emptyWeek(date: string, day: "saturday" | "sunday"): WeekAssignments {
     counting: [],
     ushers: [],
     hospitality: [],
+    kitchen: [],
+    cafe: [],
   };
 }
 
-// Hospitality keys are excluded from clash + fairness accounting: the fixed
-// A/B teams may overlap with worship team / ushers / HC in the same week.
-const HOSPITALITY_KEYS: (keyof WeekAssignments)[] = [
+// Kitchen/Cafe/Hospitality crews may overlap with worship team / ushers / HC
+// in the same week (observed: singers also on kitchen), so they are excluded
+// from clash + fairness accounting like the fixed hospitality teams.
+const OVERLAP_KEYS: (keyof WeekAssignments)[] = [
   "hospitality",
   "hospitalityTeam",
   "hospitalityLeads",
+  "kitchen",
+  "cafe",
 ];
 
 function capabilityPool(
@@ -48,13 +53,13 @@ function findPerson(lookup: PeopleLookup, name: string): Person | undefined {
 }
 
 // Returns whether name is already doing something in the given week.
-// Hospitality is deliberately ignored so service roles never clash-block
-// hospitality members (and vice versa — hospitality allows overlaps).
+// Overlap crews (kitchen/cafe/hospitality) are deliberately ignored so
+// service roles never clash-block crew members (and vice versa).
 function isAssignedAnywhere(week: WeekAssignments, name: string): boolean {
   const n = normalize(name);
   for (const key of Object.keys(week) as (keyof WeekAssignments)[]) {
     if (key === "date" || key === "day") continue;
-    if ((HOSPITALITY_KEYS as string[]).includes(key)) continue;
+    if ((OVERLAP_KEYS as string[]).includes(key)) continue;
     const v = week[key];
     if (typeof v === "string" && normalize(v) === n) return true;
     if (Array.isArray(v) && v.some((x) => normalize(x) === n)) return true;
@@ -106,8 +111,8 @@ function countAssignments(roster: Roster | undefined): Map<string, number> {
   for (const w of weeks) {
     for (const key of Object.keys(w) as (keyof WeekAssignments)[]) {
       if (key === "date" || key === "day") continue;
-      // Fixed hospitality teams must not distort cross-month fairness.
-      if ((HOSPITALITY_KEYS as string[]).includes(key)) continue;
+      // Fixed crews must not distort cross-month fairness.
+      if ((OVERLAP_KEYS as string[]).includes(key)) continue;
       const v = w[key];
       const add = (n: string) => {
         const k = normalize(n);
@@ -823,6 +828,79 @@ export function generateRoster(
     }
   }
 
+  // ---------- 12. KITCHEN & CAFE (Sundays where hospitality serves) ----------
+  // Cafe is the fixed team of 5 on Team A/B weeks. Kitchen is the lead(s)
+  // plus a fairness-rotated crew from the pool, totalling kitchenPerWeek.
+  // "combined" gets kitchen only (observed Evangel Day pattern); "none"
+  // (break/recess) and Saturdays get neither. Crews may overlap other roles,
+  // so no clash filtering — only away-date filtering.
+  if (!options.worshipOnly) {
+    const cafeTeam = rules.cafeTeam || [];
+    const kitchenLeads = rules.kitchenLeads || [];
+    const kitchenPool = rules.kitchenPool || [];
+    const kitchenWanted = Math.max(rules.kitchenPerWeek || 5, kitchenLeads.length);
+
+    // Fairness baseline: kitchen appearances in the previous month.
+    const kitchenCounts = new Map<string, number>();
+    if (options.previousRoster) {
+      const prevWeeks = [
+        ...(options.previousRoster.saturdays || []),
+        ...(options.previousRoster.sundays || []),
+      ];
+      for (const w of prevWeeks) {
+        for (const n of w.kitchen || []) {
+          const k = normalize(n);
+          if (k) kitchenCounts.set(k, (kitchenCounts.get(k) || 0) + 1);
+        }
+      }
+    }
+    const bumpKitchen = (n: string) => {
+      const k = normalize(n);
+      if (k) kitchenCounts.set(k, (kitchenCounts.get(k) || 0) + 1);
+    };
+
+    for (const w of sundays) {
+      const team = (w.hospitalityTeam || "").trim();
+      if (team !== "A" && team !== "B" && team !== "combined") {
+        w.kitchen = [];
+        w.cafe = [];
+        continue;
+      }
+      // Cafe: fixed team on A/B weeks only.
+      w.cafe =
+        team === "combined"
+          ? []
+          : cafeTeam.filter((m) => !isUnavailable(m, w.date, false, rules, lookup));
+      // Kitchen: leads first, then fewest-appearances picks from the pool.
+      const crew = kitchenLeads.filter((m) => !isUnavailable(m, w.date, false, rules, lookup));
+      crew.forEach(bumpKitchen);
+      const remaining = kitchenPool.filter(
+        (m) =>
+          !crew.some((c) => normalize(c) === normalize(m)) &&
+          !isUnavailable(m, w.date, false, rules, lookup)
+      );
+      while (crew.length < kitchenWanted && remaining.length > 0) {
+        const pick = pickByFewest(remaining, kitchenCounts);
+        if (!pick) break;
+        crew.push(pick);
+        bumpKitchen(pick);
+        remaining.splice(remaining.indexOf(pick), 1);
+      }
+      w.kitchen = crew;
+      if (crew.length < kitchenWanted) {
+        unresolved.push({
+          date: w.date,
+          slot: "kitchen",
+          reason: `Only ${crew.length}/${kitchenWanted} kitchen crew available`,
+        });
+      }
+    }
+    for (const w of saturdays) {
+      w.kitchen = [];
+      w.cafe = [];
+    }
+  }
+
   return { roster, warnings: [], unresolved };
 }
 
@@ -857,4 +935,6 @@ export const ASSIGNMENT_ORDER = [
   "counting",
   "toilets",
   "hospitality",
+  "kitchen",
+  "cafe",
 ];

@@ -149,6 +149,14 @@ export default function RulesEditor() {
         <Field label="Drums priority (prefer for drums, deprioritize on freeshow)" value={csvList(rules.drumsPriority || [])} onChange={v => set("drumsPriority", parseCsv(v))} />
       </Section>
 
+      <Section title="Kitchen & Cafe">
+        <p className="text-xs text-gray-500 mb-1">Cafe is the fixed team of 5 every serving Sunday. Kitchen is the lead(s) plus a fairness-rotated crew from the pool. Both serve only when hospitality serves.</p>
+        <Field label="Cafe team (fixed, comma-separated)" value={csvList(rules.cafeTeam || [])} onChange={v => set("cafeTeam", parseCsv(v))} />
+        <Field label="Kitchen leads (comma-separated)" value={csvList(rules.kitchenLeads || [])} onChange={v => set("kitchenLeads", parseCsv(v))} />
+        <Field label="Kitchen rotation pool (comma-separated)" value={csvList(rules.kitchenPool || [])} onChange={v => set("kitchenPool", parseCsv(v))} />
+        <NumField label="Kitchen crew per week (incl. leads)" value={rules.kitchenPerWeek || 5} onChange={v => set("kitchenPerWeek", v)} />
+      </Section>
+
       <Section title="Per-week counts">
         <NumField label="Singers per week" value={rules.singersPerWeek} onChange={v => set("singersPerWeek", v)} />
         <NumField label="HC servers per week" value={rules.hcServersPerWeek} onChange={v => set("hcServersPerWeek", v)} />

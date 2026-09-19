@@ -118,19 +118,23 @@ export function validateRoster(
     const weekIdx = isSaturday ? 1 : weekIndexOfSunday(week.date);
     const namesMap = namesForWeek(week);
 
-    // 1. Away-date checks (hospitality excluded — the fixed A/B teams are
+    // 1. Away-date checks (overlap crews excluded — the fixed teams are
     // listed even when someone is away, matching the printed rosters).
     for (const [name, slots] of namesMap.entries()) {
-      const nonHosp = slots.filter(
-        (s) => s !== "hospitality" && s !== "hospitalityLeads"
+      const nonOverlap = slots.filter(
+        (s) =>
+          s !== "hospitality" &&
+          s !== "hospitalityLeads" &&
+          s !== "kitchen" &&
+          s !== "cafe"
       );
-      if (nonHosp.length === 0) continue;
+      if (nonOverlap.length === 0) continue;
       const p = findPerson(lookup, name);
       if (!p) continue;
       if (isAwayOn(week.date, p.awayDates)) {
         warnings.push({
           date: week.date,
-          slot: nonHosp.join(","),
+          slot: nonOverlap.join(","),
           message: `${name} is marked away on ${week.date} but is rostered.`,
           severity: "hard",
         });

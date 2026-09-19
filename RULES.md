@@ -134,6 +134,17 @@ Fixed: **Ezekiel, Ammon** (every week they're available)
 
 ---
 
+## Kitchen & Cafe (Sundays where hospitality serves)
+
+- **Cafe (fixed 5, every serving Sunday):** Elizabeth, Aira, Richard, Jarrod, Ammon
+- **Kitchen (5 per week):** David (lead, every week) + 4 fairness-rotated from Suzanna, Alif, Pax, Jullianne, Grace, Amy, Ida, Deepi
+- **Sundays only** — Saturdays are always empty
+- **Follows hospitality:** Team A/B weeks get both crews; `combined` gets kitchen only; `none` (break/recess) gets neither
+- **Allows overlaps** — crew may also sing, play, usher, etc. the same week (e.g. Grace); only away-dates filter auto-fill
+- Editable in Admin → Rules → Kitchen & Cafe; dropdowns list everyone with the `kitchen` / `cafe` capability (Admin → People)
+
+---
+
 ## Saturday (1st Saturday) Unavailable
 
 Aira, Jarrod, Ammon, Alif, Molly, Francisca

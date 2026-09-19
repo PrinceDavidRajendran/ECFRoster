@@ -88,11 +88,19 @@ function WeekBlock({ w }: { w: WeekAssignments }) {
         <HospitalityCell w={w} />
       </td>
 
-      {/* KITCHEN (not filled yet) */}
-      <td className="cell placeholder"></td>
+      {/* KITCHEN */}
+      <td className="cell">
+        {(w.kitchen || []).map((s, i) => (
+          <div key={i}>{s}</div>
+        ))}
+      </td>
 
-      {/* CAFE (not filled yet) */}
-      <td className="cell placeholder"></td>
+      {/* CAFE */}
+      <td className="cell">
+        {(w.cafe || []).map((s, i) => (
+          <div key={i}>{s}</div>
+        ))}
+      </td>
     </tr>
   );
 }

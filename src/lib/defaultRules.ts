@@ -119,6 +119,14 @@ export const DEFAULT_RULES: Rules = {
   hospitalityLeadsPerWeek: 3,
   hospitalityBreakFirstWeek: true,
 
+  // Kitchen & Cafe (observed JUL–SEP 2026).
+  kitchenLeads: ["David"],
+  kitchenPool: [
+    "Suzanna", "Alif", "Pax", "Jullianne", "Grace", "Amy", "Ida", "Deepi",
+  ],
+  kitchenPerWeek: 5,
+  cafeTeam: ["Elizabeth", "Aira", "Richard", "Jarrod", "Ammon"],
+
   // PDF footer text (editable).
   pdfFooter: {
     packUp: "Ezekiel, Zachary, Ezra, Abegail",

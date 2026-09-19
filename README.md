@@ -196,6 +196,7 @@ For MongoDB Atlas: set IP allowlist to `0.0.0.0/0` (or Vercel's dynamic IPs).
 | `npm run start` | Start production server |
 | `npm run seed` | Import people & rosters from Excel files |
 | `npm run seed-test-users` | Create/reset `admin@ecf.test` + `worship@ecf.test` (password: `test1234`) |
+| `npm run clone-db` | Copy people/rules/settings to another DB: `npm run clone-db -- "<MONGODB_URI>"` |
 | `npm run reset-password` | Reset any user's password: `npm run reset-password -- user@x.com "NewPass8+"` |
 | `npm run lint` | Run ESLint |
 

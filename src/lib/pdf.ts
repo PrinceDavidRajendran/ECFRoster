@@ -76,6 +76,8 @@ export function generateRosterPdf(roster: Roster, rules: Rules): Promise<Buffer>
         { key: "counting", header: "COUNTING", weight: 82 },
         { key: "toilets", header: "TOILETS", weight: 66 },
         { key: "hospitality", header: "HOSPITALITY", weight: 110 },
+        { key: "kitchen", header: "KITCHEN", weight: 68 },
+        { key: "cafe", header: "CAFE", weight: 68 },
       ];
       const totalWeight = cols.reduce((s, c) => s + c.weight, 0);
       const widths = cols.map((c) => (c.weight / totalWeight) * usableWidth);
@@ -158,6 +160,8 @@ export function generateRosterPdf(roster: Roster, rules: Rules): Promise<Buffer>
           counting: [L([{ t: (w.counting || []).join(", ") }])],
           toilets: [lv("M:", w.toiletM || ""), lv("F:", w.toiletF || "")],
           hospitality,
+          kitchen: (w.kitchen || []).map((s) => L([{ t: s }])),
+          cafe: (w.cafe || []).map((s) => L([{ t: s }])),
         };
       };
 

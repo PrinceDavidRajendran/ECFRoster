@@ -55,6 +55,8 @@ const COLUMNS: ColumnDef[] = [
   { key: "hospitalityTeam", label: "Hosp. Team", kind: "single", fixedOptions: ["A", "B", "combined", "none"] },
   { key: "hospitality", label: "Hospitality", kind: "multi", cap: "hospitality" },
   { key: "hospitalityLeads", label: "Hosp. Leads ^", kind: "multi", cap: "hospitality" },
+  { key: "kitchen", label: "Kitchen", kind: "multi", cap: "kitchen" },
+  { key: "cafe", label: "Cafe", kind: "multi", cap: "cafe" },
 ];
 
 interface RosterGridProps {
@@ -123,6 +125,8 @@ export default function RosterGrid({
         "toiletM",
         "toiletF",
         "hospitality",
+        "kitchen",
+        "cafe",
       ] as CapabilityKey[]) {
       // Hospitality uses fixed A/B teams; the capability may not be set on
       // people, so offer every active person for manual edits.

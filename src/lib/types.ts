@@ -135,6 +135,15 @@ export interface Rules {
   hospitalityLeadsPerWeek: number; // ^ setup leads per serving (3)
   hospitalityBreakFirstWeek: boolean; // default first Sunday to "none"
 
+  // Kitchen & Cafe (observed JUL–SEP 2026). Cafe is a fixed team of 5 every
+  // serving Sunday. Kitchen is the lead(s) + a fairness-rotated crew from the
+  // pool, totalling kitchenPerWeek. Served only when hospitality serves
+  // (team A/B; "combined" gets kitchen only, "none" gets neither).
+  kitchenLeads: string[]; // e.g. ["David"] — on every kitchen week
+  kitchenPool: string[]; // rotation pool for the remaining crew
+  kitchenPerWeek: number; // total kitchen crew per week (incl. leads)
+  cafeTeam: string[]; // fixed 5, e.g. Elizabeth/Aira/Richard/Jarrod/Ammon
+
   // PDF footer text (editable, shown at the bottom of the printed roster).
   pdfFooter: {
     packUp: string; // e.g. "Ezekiel, Zachary, Ezra, Abegail"
@@ -181,6 +190,9 @@ export interface WeekAssignments {
   hospitality?: string[];
   hospitalityTeam?: string;
   hospitalityLeads?: string[];
+  // Kitchen & Cafe crews (5 each on serving Sundays; see Rules).
+  kitchen?: string[];
+  cafe?: string[];
 }
 
 export interface Warning {
