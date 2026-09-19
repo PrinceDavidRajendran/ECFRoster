@@ -22,6 +22,13 @@ export async function GET() {
     await db.command({ ping: 1 });
     report.db = "up";
     report.users = await db.collection("users").countDocuments();
+    // Collection counts only (no personal data) — verifies seed/clone state.
+    report.people = await db.collection("people").countDocuments();
+    report.rules = await db.collection("rules").countDocuments();
+    report.rosters = await db.collection("rosters").countDocuments();
+    report.rosterMonths = (
+      await db.collection("rosters").find({}).project({ month: 1 }).toArray()
+    ).map((r) => (r as { month?: string }).month);
   } catch (e) {
     report.db = `error: ${String((e as Error).message).slice(0, 200)}`;
   }

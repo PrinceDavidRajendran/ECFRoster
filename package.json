@@ -9,6 +9,7 @@
     "lint": "next lint",
     "seed": "tsx scripts/seed-from-excel.ts",
     "seed-test-users": "tsx scripts/seed-test-users.ts",
+    "clone-db": "tsx scripts/clone-db.ts",
     "reset-password": "tsx scripts/reset-password.ts"
   },
   "dependencies": {
