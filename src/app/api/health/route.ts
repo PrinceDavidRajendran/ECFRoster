@@ -11,6 +11,8 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const sessionSecret = process.env.SESSION_SECRET || "";
   const report: Record<string, unknown> = {
+    // Vercel sets this per deployment — proves which commit is live.
+    commit: (process.env.VERCEL_GIT_COMMIT_SHA || "local").slice(0, 7),
     sessionSecret:
       sessionSecret.length >= 32 ? "configured" : "missing-or-too-short",
     mongodbUri: process.env.MONGODB_URI ? "configured" : "missing",
