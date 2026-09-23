@@ -1,8 +1,14 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type { Roster, Rules, WeekAssignments } from "@/lib/types";
 import { monthLabel } from "@/lib/dates";
 import { DEFAULT_RULES } from "@/lib/defaultRules";
+import {
+  SERVICE_TIMETABLE_LEFT,
+  SERVICE_TIMETABLE_RIGHT,
+  type TimetableRow,
+} from "@/lib/serviceTimetable";
 
 // Renders the roster in the ECF Service Roster print layout (A4 landscape).
 // Populated fields come from the roster; sections we don't fill yet
@@ -125,12 +131,14 @@ function HospitalityCell({ w }: { w: WeekAssignments }) {
   if (team === "A" || team === "B") {
     return (
       <div>
-        <div className="lead">Team {team}</div>
-        {hosp.map((s, i) => (
-          <div key={i} className={leads.has(s.toLowerCase()) ? "lead" : undefined}>
-            {s}{leads.has(s.toLowerCase()) ? "^" : ""}
-          </div>
-        ))}
+        <div className="lead hosp-title">Team {team}</div>
+        <div className="hosp-grid">
+          {hosp.map((s, i) => (
+            <div key={i} className={leads.has(s.toLowerCase()) ? "lead" : undefined}>
+              {s}{leads.has(s.toLowerCase()) ? "^" : ""}
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -153,8 +161,29 @@ export default function RosterPrintView({ roster, rules }: { roster: Roster; rul
   );
   const footer = rules?.pdfFooter || DEFAULT_RULES.pdfFooter;
 
+  // Auto-fit: shrink (via CSS zoom, honoured by print) so the whole roster
+  // always prints on a single A4 landscape page. Printable height at 8mm
+  // margins = 194mm ≈ 733px.
+  const printRef = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState(1);
+  useEffect(() => {
+    const el = printRef.current;
+    if (!el) return;
+    el.style.zoom = "1";
+    const full = el.scrollHeight;
+    const z = full > 733 ? 733 / full : 1;
+    el.style.zoom = String(z);
+    setFit(z);
+  }, [roster, rules]);
+
   return (
-    <div className="roster-print">
+    <div>
+      {fit < 1 && (
+        <div className="no-print fit-note">
+          Auto-scaled to {Math.round(fit * 100)}% to fit one page
+        </div>
+      )}
+      <div className="roster-print" ref={printRef}>
       <div className="print-header">
         EVANGEL CHRISTIAN FELLOWSHIP — SERVICE ROSTER —{" "}
         {monthLabel(roster.month).toUpperCase()}
@@ -195,11 +224,60 @@ export default function RosterPrintView({ roster, rules }: { roster: Roster; rul
             </tr>
           </tbody>
         </table>
-        <p>{footer.thirdServerNote}</p>
-        <p>{footer.boldNamesNote}</p>
-        <p>{footer.pleaseNote}</p>
-        <p className="quote">{footer.punctualityNote}</p>
+        <p className="note-italic">{footer.thirdServerNote}</p>
+        <p className="note-italic">{footer.boldNamesNote}</p>
+        <PleaseNote text={footer.pleaseNote} />
+        <PunctNote text={footer.punctualityNote} />
+
+        <div className="timetable">
+          <TimetableTable rows={SERVICE_TIMETABLE_LEFT} />
+          <TimetableTable rows={SERVICE_TIMETABLE_RIGHT} />
+        </div>
+      </div>
       </div>
     </div>
+  );
+}
+
+function TimetableTable({ rows }: { rows: TimetableRow[] }) {
+  return (
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Sunday Service</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r, i) => (
+          <tr key={i}>
+            <td className="tt-time">{r.time}</td>
+            <td>{r.item}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+// "Please Note:" label in bold + underline (like the original), rest regular.
+function PleaseNote({ text }: { text: string }) {
+  const m = /^(Please Note:\s*)([\s\S]*)$/.exec(text || "");
+  if (!m) return <p>{text}</p>;
+  return (
+    <p>
+      <span className="please-label">{m[1].trimEnd()}</span> {m[2]}
+    </p>
+  );
+}
+
+// Centred line with a bold first word ("PUNCTUALITY ...").
+function PunctNote({ text }: { text: string }) {
+  const m = /^(\S+)\s+([\s\S]*)$/.exec(text || "");
+  if (!m) return <p className="quote">{text}</p>;
+  return (
+    <p className="quote">
+      <strong>{m[1]}</strong> {m[2]}
+    </p>
   );
 }

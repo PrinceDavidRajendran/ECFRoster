@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { monthLabel } from "@/lib/dates";
 import type { MonthAbsence, Roster, RosterStatus, Rules, WeekAssignments } from "@/lib/types";
@@ -487,27 +488,33 @@ export default function ServiceRosterPage({ isAdmin = false }: { isAdmin?: boole
         </>
       )}
 
-      {/* Roster preview / PDF modal */}
-      {showPreview && roster && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center overflow-auto p-4 print-modal">
-          <div className="bg-white rounded-lg shadow-xl max-w-[95vw] w-full my-4">
-            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white rounded-t-lg no-print">
-              <h2 className="font-semibold text-lg">Roster Preview — {monthLabel(roster.month)}</h2>
-              <div className="flex gap-2">
-                <button className="btn-primary" onClick={() => window.print()}>
-                  Download / Print PDF
-                </button>
-                <button className="btn-secondary" onClick={() => setShowPreview(false)}>
-                  Close
-                </button>
+      {/* Roster preview / PDF modal — portalled to <body> so print CSS can
+          isolate it (body > *:not(.print-modal) is hidden when printing,
+          leaving exactly one page). */}
+      {showPreview &&
+        roster &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center overflow-auto p-4 print-modal">
+            <div className="bg-white rounded-lg shadow-xl max-w-[95vw] w-full my-4">
+              <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white rounded-t-lg no-print">
+                <h2 className="font-semibold text-lg">Roster Preview — {monthLabel(roster.month)}</h2>
+                <div className="flex gap-2">
+                  <button className="btn-primary" onClick={() => window.print()}>
+                    Download / Print PDF
+                  </button>
+                  <button className="btn-secondary" onClick={() => setShowPreview(false)}>
+                    Close
+                  </button>
+                </div>
+              </div>
+              <div className="p-4 overflow-x-auto">
+                <RosterPrintView roster={roster} rules={rules || undefined} />
               </div>
             </div>
-            <div className="p-4 overflow-x-auto">
-              <RosterPrintView roster={roster} rules={rules || undefined} />
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

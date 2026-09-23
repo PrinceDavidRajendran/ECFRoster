@@ -142,7 +142,7 @@ h1, h2, h3, h4 {
   background: #fff;
   color: #000;
   padding: 12px;
-  font-size: 10px;
+  font-size: 11.5px;
   font-family: Arial, Helvetica, sans-serif;
 }
 .roster-print .print-header {
@@ -161,6 +161,25 @@ h1, h2, h3, h4 {
   border-collapse: collapse;
   table-layout: fixed;
 }
+/* Hospitality carries 9–11 names: give it ~2× width so its 3-column
+   sub-grid fits; trim the narrow single-value columns to compensate. */
+.roster-print .print-table th:nth-child(1),
+.roster-print .print-table td:nth-child(1) { width: 5.5%; }
+.roster-print .print-table th:nth-child(6),
+.roster-print .print-table td:nth-child(6) { width: 12.5%; }
+.roster-print .print-table th:nth-child(10),
+.roster-print .print-table td:nth-child(10) { width: 17%; }
+.roster-print .print-table th:nth-child(7),
+.roster-print .print-table td:nth-child(7),
+.roster-print .print-table th:nth-child(8),
+.roster-print .print-table td:nth-child(8),
+.roster-print .print-table th:nth-child(9),
+.roster-print .print-table td:nth-child(9),
+.roster-print .print-table th:nth-child(11),
+.roster-print .print-table td:nth-child(11),
+.roster-print .print-table th:nth-child(12),
+.roster-print .print-table td:nth-child(12) { width: 6%; }
+.roster-print .week-row { page-break-inside: avoid; }
 .roster-print .print-table th,
 .roster-print .print-table td {
   border: 1px solid #9aa5b1;
@@ -172,7 +191,7 @@ h1, h2, h3, h4 {
 .roster-print .print-table th {
   background: #dbe5f1;
   color: #1f3a5f;
-  font-size: 9px;
+  font-size: 10px;
   text-transform: uppercase;
   text-align: center;
   border-color: #4a4a4a;
@@ -181,7 +200,19 @@ h1, h2, h3, h4 {
   background: #f4f7fb;
 }
 .roster-print .week-row td {
-  height: 64px;
+  height: auto;
+  min-height: 0;
+}
+/* Hospitality Team A/B renders as a 3-column sub-grid (like the Excel
+   rosters) so rows stay short and the month fits on one landscape page. */
+.roster-print .hosp-title {
+  text-align: center;
+  text-decoration: underline;
+}
+.roster-print .hosp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  column-gap: 6px;
 }
 .roster-print .date-cell {
   text-align: center;
@@ -218,12 +249,49 @@ h1, h2, h3, h4 {
 }
 .roster-print .print-footer {
   margin-top: 10px;
-  font-size: 8px;
+  font-size: 8.5px;
   color: #333;
 }
-.roster-print .print-footer .quote {
+.roster-print .print-footer .note-italic {
   font-style: italic;
+}
+.roster-print .print-footer .please-label {
+  font-weight: 700;
+  text-decoration: underline;
+}
+.roster-print .print-footer .quote {
+  font-style: normal;
+  text-align: center;
   margin-top: 4px;
+}
+/* Sunday service timetable (two tables, like the original rosters). */
+.roster-print .timetable {
+  display: flex;
+  justify-content: space-evenly;
+  margin-top: 8px;
+}
+.roster-print .timetable table {
+  width: 36%;
+  border-collapse: collapse;
+  font-size: 8.5px;
+}
+.roster-print .timetable th,
+.roster-print .timetable td {
+  border: 1px solid #4a4a4a;
+  padding: 2px 5px;
+}
+.roster-print .timetable th {
+  font-weight: 700;
+}
+.roster-print .timetable .tt-time {
+  text-align: center;
+  white-space: nowrap;
+  width: 28%;
+}
+.fit-note {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 6px;
 }
 .roster-print .footer-tasks {
   width: 100%;
@@ -256,19 +324,11 @@ h1, h2, h3, h4 {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-  body * {
-    visibility: hidden;
-  }
-  .roster-print,
-  .roster-print * {
-    visibility: visible;
-  }
-  .roster-print {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    padding: 0;
+  /* Only the preview modal prints. Everything else is removed from layout
+     entirely (not just hidden) so page content behind the modal can't spill
+     onto extra blank pages. The modal is portalled to <body> for this. */
+  body > *:not(.print-modal) {
+    display: none !important;
   }
   /* Neutralise the modal overlay/backdrop when printing. */
   .print-modal {
@@ -284,6 +344,14 @@ h1, h2, h3, h4 {
     margin: 0 !important;
     max-width: none !important;
     width: 100% !important;
+  }
+  .print-modal .overflow-x-auto {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  .roster-print {
+    width: 100%;
+    padding: 0;
   }
   .no-print {
     display: none !important;

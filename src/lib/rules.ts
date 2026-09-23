@@ -216,20 +216,32 @@ export function validateRoster(
     }
 
     // 7. Camera clash: cannot be on ushers or worship team same week.
+    // (Per rostering doc: "They cant be on ushers or on Worship team.")
+    // Hospitality / hospitalityLeads / kitchen / cafe crews MAY overlap with
+    // camera (observed: Aira on camera + hospitality/cafe; Alif on camera +
+    // kitchen), as can counting/HC/toilets (different time in service).
     if (week.camera) {
-      const cam = normalize(week.camera);
-      const clash = namesMap.get(week.camera)?.filter(
-        (s) => s !== "camera"
-      );
-      if (clash && clash.length > 0) {
+      const camNorm = normalize(week.camera);
+      const clashes: string[] = [];
+      // Worship-team slots.
+      for (const slot of WORSHIP_SLOTS) {
+        const v = week[slot];
+        if (Array.isArray(v)) {
+          if (v.some((n) => normalize(n) === camNorm)) clashes.push(String(slot));
+        } else if (typeof v === "string" && v && normalize(v) === camNorm) {
+          clashes.push(String(slot));
+        }
+      }
+      // Ushers.
+      if (week.ushers.some((u) => normalize(u) === camNorm)) clashes.push("ushers");
+      if (clashes.length > 0) {
         warnings.push({
           date: week.date,
           slot: "camera",
-          message: `${week.camera} is on Camera and also on ${clash.join(", ")} same week.`,
+          message: `${week.camera} is on Camera and also on ${clashes.join(", ")} same week.`,
           severity: "hard",
         });
       }
-      void cam;
     }
 
     // 8. Usher rules: 2/month, no back-to-back.

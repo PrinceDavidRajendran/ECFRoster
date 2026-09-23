@@ -133,10 +133,16 @@ export default function RosterGrid({
       if (c === "hospitality") {
         m.set(c, people.filter((p) => p.active));
       } else {
-        m.set(
-          c,
-          people.filter((p) => p.active && p.capabilities.includes(c))
-        );
+        const pool = people.filter((p) => p.active && p.capabilities.includes(c));
+        // Toilet (M/F) pools are small and were missing from some databases
+        // (seeded before the reference table was parsed). Never leave the
+        // dropdown empty — fall back to all active people so the slot stays
+        // assignable until Admin → People capabilities are backfilled.
+        if ((c === "toiletM" || c === "toiletF") && pool.length === 0) {
+          m.set(c, people.filter((p) => p.active));
+        } else {
+          m.set(c, pool);
+        }
       }
       void CAPABILITY_LABELS[c];
     }
