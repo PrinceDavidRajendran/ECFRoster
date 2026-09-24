@@ -63,7 +63,41 @@ export async function PATCH(req: NextRequest) {
   if (!oid) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   const col = await collections.people();
   await col.updateOne({ _id: oid }, { $set: update });
+  // If away dates changed, re-validate every roster whose month overlaps any
+  // away range so pre-populated (including next month's) assignments covered
+  // by the new dates immediately surface hard validation errors. This is
+  // warnings-only — assignments are never auto-changed here.
+  if (Array.isArray(body.awayDates)) {
+    try {
+      await revalidateRostersForAwayDates();
+    } catch (e) {
+      console.warn("[people] roster revalidation failed:", e);
+    }
+  }
   return NextResponse.json({ ok: true });
+}
+
+async function revalidateRostersForAwayDates(): Promise<void> {
+  const { buildLookup, validateRoster, applyAbsences } = await import("@/lib/rules");
+  const { DEFAULT_RULES } = await import("@/lib/defaultRules");
+  const peopleCol = await collections.people();
+  const people = (await peopleCol.find({}).toArray()) as Person[];
+  const rulesCol = await collections.rules();
+  const rulesDoc = await rulesCol.findOne({});
+  const rules = { ...DEFAULT_RULES, ...(rulesDoc || {}) };
+  const rosterCol = await collections.rosters();
+  const rosters = (await rosterCol.find({}).toArray()) as import("@/lib/types").Roster[];
+  for (const r of rosters) {
+    const available = applyAbsences(people, r.absences);
+    const warnings = validateRoster(r, buildLookup(available), rules);
+    const before = JSON.stringify(r.warnings || []);
+    if (JSON.stringify(warnings) !== before) {
+      await rosterCol.updateOne(
+        { _id: r._id },
+        { $set: { warnings, updatedAt: new Date() } }
+      );
+    }
+  }
 }
 
 export async function DELETE(req: NextRequest) {

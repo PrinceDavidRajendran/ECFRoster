@@ -457,6 +457,7 @@ export default function ServiceRosterPage({ isAdmin = false }: { isAdmin?: boole
             editable={canEdit(roster)}
             busy={busy}
             onSave={saveAbsences}
+            weeks={[...roster.saturdays, ...roster.sundays]}
           />
 
           {canEdit(roster) && (

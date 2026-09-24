@@ -165,6 +165,7 @@ export default function WorshipRosterPage({ isAdmin = false }: { isAdmin?: boole
           editable={!isLocked}
           busy={busy}
           onSave={saveAbsences}
+          weeks={[...roster.saturdays, ...roster.sundays]}
         />
       )}
 

@@ -52,11 +52,14 @@ export interface AwayDate {
 
 // A person's absence entered when starting a month's roster. Ranges may spill
 // into the next month; overlapping entries are carried forward automatically.
+// `carriedFrom` marks entries auto-copied from a previous month so the next
+// save can reconcile them (remove stale carries, keep manual edits).
 export interface MonthAbsence {
   personName: string;
   from: string; // ISO date (yyyy-mm-dd)
   to?: string; // optional, inclusive; omit for a single day
   note?: string;
+  carriedFrom?: string; // "YYYY-MM" of the month this was carried from
 }
 
 export interface Person {

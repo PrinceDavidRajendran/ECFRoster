@@ -38,7 +38,9 @@ export async function POST(req: NextRequest) {
 
   // Carry forward absences from the previous month whose range spills into this
   // month (e.g. away the last week of last month through the first weeks of this
-  // one). Clamp their start to this month's first day for a tidy display.
+  // one). Clamp their start to this month's first day for a tidy display and
+  // tag them with `carriedFrom` so later edits to the previous month can
+  // reconcile (update/remove) them automatically.
   const firstDay = `${month}-01`;
   const prevMonth = previousMonthStr(month);
   const prev = prevMonth ? await col.findOne({ month: prevMonth }) : null;
@@ -49,6 +51,7 @@ export async function POST(req: NextRequest) {
       from: a.from < firstDay ? firstDay : a.from,
       to: a.to,
       note: a.note,
+      carriedFrom: prevMonth as string,
     }));
 
   const now = new Date();

@@ -82,7 +82,18 @@ export async function PATCH(req: NextRequest, ctx: { params: { id: string } }) {
   // but we accept "status" here too as a convenience.
   if (body.saturdays !== undefined) roster.saturdays = body.saturdays;
   if (body.sundays !== undefined) roster.sundays = body.sundays;
-  if (body.absences !== undefined) roster.absences = body.absences;
+  if (body.absences !== undefined) {
+    roster.absences = sanitizeAbsences(body.absences);
+    // Forward-propagate month-spanning absences into the next month's roster
+    // (if it already exists) so "away next month too" is automatic. Stale
+    // carries from this month are removed first, so shortening/removing an
+    // absence cleans up next month as well.
+    try {
+      await propagateAbsencesForward(col, roster.month, roster.absences);
+    } catch (e) {
+      console.warn("[roster] forward-propagate absences failed:", e);
+    }
+  }
 
   if (body.action) {
     // Derive a base URL for Telegram links: env override first, else the
@@ -153,6 +164,127 @@ const actionRoles: Record<string, Role[]> = {
   approve: ["admin"],
   reset: ["admin"],
 };
+
+// Drop empty/invalid absence rows from client saves.
+function sanitizeAbsences(input: unknown): Roster["absences"] {
+  if (!Array.isArray(input)) return [];
+  const out: NonNullable<Roster["absences"]> = [];
+  for (const a of input as Record<string, unknown>[]) {
+    if (!a || typeof a !== "object") continue;
+    const personName = String((a.personName ?? "") as string).trim();
+    const from = String((a.from ?? "") as string).trim();
+    if (!personName || !/^\d{4}-\d{2}-\d{2}$/.test(from)) continue;
+    const rawTo = typeof a.to === "string" ? a.to.trim() : "";
+    const to = rawTo && /^\d{4}-\d{2}-\d{2}$/.test(rawTo) && rawTo >= from ? rawTo : undefined;
+    const rawNote = typeof a.note === "string" ? a.note.trim() : "";
+    const rawCarried = typeof a.carriedFrom === "string" ? a.carriedFrom.trim() : "";
+    out.push({
+      personName,
+      from,
+      ...(to ? { to } : {}),
+      ...(rawNote ? { note: rawNote } : {}),
+      ...(/^\d{4}-\d{2}$/.test(rawCarried) ? { carriedFrom: rawCarried } : {}),
+    });
+  }
+  return out;
+}
+
+function nextMonthStr(month: string): string | null {
+  const m = /^(\d{4})-(\d{2})$/.exec(month);
+  if (!m) return null;
+  let year = Number(m[1]);
+  let mon = Number(m[2]) + 1;
+  if (mon > 12) { mon = 1; year += 1; }
+  return `${year}-${String(mon).padStart(2, "0")}`;
+}
+
+// Carry month-spanning absences forward through every existing future roster.
+// Chain: after updating month N+1 (removing stale carries from N, adding fresh
+// ones), that month's full absence list becomes the source for N+2, so a Sep→Nov
+// range reaches Nov even if Oct already exists. Each updated roster is
+// re-validated so pre-populated assignments covered by a new absence immediately
+// surface hard warnings.
+async function propagateAbsencesForward(
+  col: Awaited<ReturnType<typeof collections.rosters>>,
+  fromMonth: string,
+  fromAbsences: Roster["absences"]
+): Promise<void> {
+  let sourceMonth: string | null = fromMonth;
+  let sourceAbsences: Roster["absences"] = fromAbsences;
+  // Guard against pathological loops; 24 hops is well beyond any real range.
+  for (let hop = 0; hop < 24; hop++) {
+    if (!sourceMonth) break;
+    const nextMonth = nextMonthStr(sourceMonth);
+    if (!nextMonth) break;
+    const firstDay = `${nextMonth}-01`;
+    const spill = (sourceAbsences || []).filter(
+      (a) => (a.to || a.from) >= firstDay
+    );
+    const nextDoc = (await col.findOne({ month: nextMonth })) as Roster | null;
+    if (!nextDoc) break; // not created yet — creation carry-forward will handle it
+    const current: NonNullable<Roster["absences"]> = Array.isArray(nextDoc.absences)
+      ? [...nextDoc.absences]
+      : [];
+    // Remove stale auto-carries that came from the source month.
+    const kept = current.filter(
+      (a) => (a as { carriedFrom?: string }).carriedFrom !== sourceMonth
+    );
+    // Fresh carries (clamped to the next month's first day), skipping exact
+    // duplicates of a manually-entered row.
+    const fresh: NonNullable<Roster["absences"]> = [];
+    for (const a of spill) {
+      const entry = {
+        personName: a.personName,
+        from: a.from < firstDay ? firstDay : a.from,
+        ...(a.to ? { to: a.to } : {}),
+        ...(a.note ? { note: a.note } : {}),
+        carriedFrom: sourceMonth,
+      };
+      const dup = kept.some(
+        (k) =>
+          k.personName.trim().toLowerCase() === entry.personName.trim().toLowerCase() &&
+          k.from === entry.from &&
+          (k.to || "") === (entry.to || "")
+      );
+      if (!dup) fresh.push(entry);
+    }
+    const merged = [...kept, ...fresh].sort(
+      (x, y) => x.from.localeCompare(y.from) || x.personName.localeCompare(y.personName)
+    );
+    const changed = JSON.stringify(merged) !== JSON.stringify(current);
+    if (changed) {
+      // Re-validate the next roster so new carries flag hard errors on
+      // already-rostered people.
+      const peopleCol = await collections.people();
+      const people = (await peopleCol.find({}).toArray()) as Person[];
+      const rules = await loadRules();
+      const availablePeople = applyAbsences(people, merged);
+      const warnings = validateRoster(
+        { ...nextDoc, absences: merged },
+        buildLookup(availablePeople),
+        rules
+      );
+      await col.updateOne(
+        { _id: nextDoc._id },
+        {
+          $set: {
+            absences: merged,
+            warnings,
+            updatedAt: new Date(),
+          },
+        }
+      );
+    }
+    // Continue the chain with the next month's (possibly updated) list.
+    sourceMonth = nextMonth;
+    sourceAbsences = changed ? merged : current;
+    // Stop early if nothing spills further.
+    const further = (sourceAbsences || []).some(
+      (a) => (a.to || a.from) >= `${nextMonthStr(nextMonth) || "9999-99"}-01`
+    );
+    if (!further) break;
+  }
+}
 
 // Apply status workflow action with side effects (Telegram, validation).
 async function applyAction(
